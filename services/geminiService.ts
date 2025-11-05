@@ -1,11 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question } from '../types';
 
-// Use import.meta.env.VITE_API_KEY for client-side Vite apps
-const apiKey = import.meta.env.VITE_API_KEY;
+// This is the universal fix:
+// It checks for the Netlify/Vite key first, then falls back to the local key.
+const apiKey = (import.meta.env && import.meta.env.VITE_API_KEY) || process.env.API_KEY;
+
 
 if (!apiKey) {
-    throw new Error("VITE_API_KEY environment variable not set");
+    throw new Error("API_KEY environment variable not set. Please ensure it is configured.");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -33,11 +35,37 @@ const questionSchema = {
 };
 
 
-export const generateQuestion = async (difficulty: 'easy' | 'medium' | 'hard'): Promise<Question> => {
+export const generateQuestion = async (difficulty: 'easy' | 'medium' | 'hard', history: string[]): Promise<Question> => {
+    const topics = [
+        "Basic Arithmetic (involving fractions, decimals, percentages, or ratios in a real-world scenario)",
+        "Geometry (calculating area, perimeter, volume, or using the coordinate plane in a practical problem)",
+        "Algebra (solving linear equations, working with expressions, or understanding functions as they apply to real situations)",
+        "Data Analysis (interpreting graphs and charts, or calculating mean, median, and mode from a data set)"
+    ];
+
+    // Randomly select a topic to ensure variety
+    const selectedTopic = topics[Math.floor(Math.random() * topics.length)];
+
+    let prompt = `Generate one multiple-choice math word problem appropriate for a GED test.
+
+Topic Focus: **${selectedTopic}**.
+Difficulty Level: **${difficulty}**.
+
+The problem must be a real-world scenario. Ensure there are exactly 4 multiple-choice options.`;
+
+
+    if (history && history.length > 0) {
+        const historyString = history.map(q => `- "${q}"`).join('\n');
+        prompt += `
+
+IMPORTANT: To avoid repetition, please generate a question that is different from these recently asked questions:
+${historyString}`;
+    }
+
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: `Generate one multiple-choice math question of ${difficulty} difficulty appropriate for a GED test. Topics can include basic arithmetic, algebra, geometry, and data analysis. Ensure there are exactly 4 options.`,
+            contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: questionSchema,
