@@ -1,10 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question } from '../types';
 
-const apiKey = process.env.API_KEY;
+// Use import.meta.env.VITE_API_KEY for client-side Vite apps
+const apiKey = import.meta.env.VITE_API_KEY;
 
 if (!apiKey) {
-    throw new Error("API_KEY environment variable not set. Please ensure it is configured.");
+    throw new Error("VITE_API_KEY environment variable not set");
 }
 
 const ai = new GoogleGenAI({ apiKey: apiKey });
@@ -32,21 +33,11 @@ const questionSchema = {
 };
 
 
-export const generateQuestion = async (difficulty: 'easy' | 'medium' | 'hard', history: string[]): Promise<Question> => {
-    let prompt = `Generate one multiple-choice math question of ${difficulty} difficulty appropriate for a GED test. Topics can include basic arithmetic, algebra, geometry, and data analysis. Ensure there are exactly 4 options.`;
-
-    if (history && history.length > 0) {
-        const historyString = history.map(q => `- "${q}"`).join('\n');
-        prompt += `
-
-IMPORTANT: To avoid repetition, please generate a question that is different from these recently asked questions:
-${historyString}`;
-    }
-
+export const generateQuestion = async (difficulty: 'easy' | 'medium' | 'hard'): Promise<Question> => {
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: prompt,
+            contents: `Generate one multiple-choice math question of ${difficulty} difficulty appropriate for a GED test. Topics can include basic arithmetic, algebra, geometry, and data analysis. Ensure there are exactly 4 options.`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: questionSchema,
