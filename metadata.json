@@ -1,0 +1,5 @@
+{
+  "name": "GED Math Quizzer",
+  "description": "An interactive web application that generates multiple-choice math questions to help students prepare for the GED test. It provides instant feedback and detailed explanations for incorrect answers.",
+  "requestFramePermissions": []
+}
